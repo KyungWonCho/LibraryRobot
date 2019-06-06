@@ -7,16 +7,15 @@ import serial
 HOST, PORT, BUFSIZE = 'localhost', 5000, 1024
 
 cam=PiCamera()
-#ser=serial.Serial('/dev/ttyACM0', 9600)
+ser=serial.Serial('/dev/ttyACM0', 9600)
 sock=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect((HOST, PORT))
 
-for i in range(5):
-    '''
+for i in range(4):
     ser.write(b'm')
-    ser.write(b'100a')
-    time.sleep(0.100)      ## 얼마나 기달리냐??
-    '''
+    ser.write(str(i).encode('UTF-8'))
+    time.sleep(5)
+    
     cam.start_preview()
     time.sleep(1)
     cam.capture('image.jpg')
@@ -40,18 +39,18 @@ for i in range(5):
         senddata=imagedata[:BUFSIZE]
         imagedata=imagedata[BUFSIZE:]
         sock.sendall(senddata)
-'''
+
 bcom=sock.recv(BUFSIZE)
 com+=bcom.decode('UTF-8')
-
 with open('books.txt','w') as inf:
     inf.write(com)
-'''
+
 class book:
     first=''
     second=''
     third=''
-    width=0             # 아마도 width는 모터 회전수 기준으로??
+    width=0
+    idx=0
     def __init__(self, first, second, third, width):
         self.first=first
         self.second=second
@@ -87,34 +86,60 @@ books=[]
 for i in range(num):
     books.append(datamap[(bookinfo.readline())[0:-1]])
 
-for a in books:
-    print(a.first, a.second, a.third, a.width)
-'''
+sorted_books=books[:]
+
 for i in range(num):
-    ser.write(b'm')
-    ser.write(b'0a')
     for j in range(0, num-i-1):
-        if comp(books[j], books[j+1]):
+        if comp(sorted_books[j], sorted_books[j+1]):
+            sorted_books[j], sorted_books[j+1] = sorted_books[j+1], sorted_books[j]
+
+for i in range(num):
+    books[sorted_books[i].idx].idx=i
+
+x=0
+
+for i in range(num):
+    if (books[i].idx)==i:
+        continue
+    for j in range(i+1, num):
+        if (books[j].idx)==i:
+            print(j, '->', i)
             ser.write(b'm')
-            pos=0
-            for k in range(0, j):
-                pos+=books[k].width
-            ser.write((str(pos)+'a').encode('UTF-8'))
-            delay(pos)      ## 얼마나 기달리냐??
-            ser.write(b'o')
-            ser.write((str(books[j].width)+'a').encode('UTF-8'))
-            delay(1000)     ## 열려라 참깨
-            ser.write(b'p')
-            delay(3000)     ## 움직여라!
+            ser.write(str(j).encode('UTF-8'))
+            time.sleep((j-x)*4.5)
+            ser.write(b'a')
+            ser.write(str(books[j].width).encdoe('UTF-8'))
+            time.sleep(3.5+books[j].width*0.5)
             ser.write(b'm')
-            pos+=books[j].width+books[j+1].width
-            ser.write((str(pos)+'a').encode('UTF-8'))
-            delay(books[j].width+books[j+1].width)       ## 얼마나 기달리냐???
-            ser.write(b'q')
-            ser.write((str(books[j].width)+'a').encode('UTF-8'))        ## 벌려
-            delay(1000)
-            ser.write(b'r')                             ##넣어
-            delay(3000)
-            books[j], books[j+1] = books[j+1], books[j]
-'''
+            ser.write(b'4')
+            time.sleep((4-j)*4.5)
+            ser.write(b'b')
+            time.sleep(4)
+            ser.write(b'm')
+            ser.write(str(i).encode('UTF-8'))
+            time.sleep((4-i)*4.5)
+            ser.write(b'a')
+            ser.write(str(books[i].width).encdoe('UTF-8'))
+            time.sleep(3.5+books[i].width*0.5)
+            ser.write(b'm')
+            ser.write(str(j).encode('UTF-8'))
+            time.sleep((j-i)*4.5)
+            ser.write(b'b')
+            time.sleep(4)
+            ser.write(b'm')
+            ser.write(b'4')
+            time.sleep((4-j)*4.5)
+            ser.write(b'a')
+            ser.write(str(books[j].width).encdoe('UTF-8'))
+            time.sleep(3.5+books[j].width*0.5)
+            ser.write(b'm')
+            ser.write(str(i).encode('UTF-8'))
+            time.sleep((4-i)*4.5)
+            ser.write(b'b')
+            time.sleep(4)
+            temp=books[j]
+            del(books[j])
+            books.insert(i, temp)
+    x=i
+
 sock.close()
