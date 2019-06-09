@@ -8,7 +8,7 @@ const int CLK1=5;
 const int CLK2=6;
 const int CLK3=7;
 
-int pos=0;
+int pos=0, width=0;
 
 void setup(){
   Serial.begin(9600);
@@ -24,25 +24,26 @@ void setup(){
   digitalWrite(ENA1, HIGH);
   digitalWrite(ENA2, HIGH);
   digitalWrite(ENA3, HIGH);
+  opening();
 }
 
 void makemove(int a){
-  int x=(a-pos)*1000;
+  int x=(a-pos)*1120;
   pos=a;
   if(x>0) digitalWrite(DIR1, LOW);
   else digitalWrite(DIR1, HIGH), x=-x;
   while(x){
     digitalWrite(CLK1, HIGH);
-    delay(2);
+    delay(1);
     digitalWrite(CLK1, LOW);
-    delay(2);
+    delay(1);
     x--;
   }
 }
 
 void push(){
   digitalWrite(DIR3, LOW);
-  int st=3350;
+  int st=2650;
   while(st){
     digitalWrite(CLK3, HIGH);
     delay(2);
@@ -54,7 +55,7 @@ void push(){
 
 void pop(){
   digitalWrite(DIR3, HIGH);
-  int st=3350;
+  int st=2650;
   while(st){
     digitalWrite(CLK3, HIGH);
     delay(2);
@@ -66,12 +67,13 @@ void pop(){
 
 void opening(){
   digitalWrite(DIR2, LOW);
-  for(int i=0; i<7000; i++){
+  for(int i=0; i<7000-width; i++){
     digitalWrite(CLK2, HIGH);
     delay(1);
     digitalWrite(CLK2, LOW);
     delay(1);
   }
+  width=7000;
 }
 
 void closing(int style){
@@ -79,16 +81,16 @@ void closing(int style){
   int st=0;
   switch(style){
   case 4:
-    st=5200;
+    st=5400;
     break;
   case 5:
-    st=4300;
+    st=4400;
     break;
   case 6:
-    st=3000;
+    st=2900;
     break;
   case 7:
-    st=1900;
+    st=2100;
     break;
   }
   digitalWrite(DIR2, HIGH);
@@ -97,6 +99,7 @@ void closing(int style){
     delay(1);
     digitalWrite(CLK2, LOW);
     delay(1);
+    width--;
   }
 }
 
@@ -105,12 +108,18 @@ void loop(){
     char com=Serial.read();
     if(com=='m'){
       char a;
-      a=Serial.read();
-      makemove(a);
+      while(1){
+        a=Serial.read();
+        if('0'<=a && a<='9') break;
+      }
+      makemove(a-'0');
     }
     if(com=='a'){
       char a;
-      a=Serial.read();
+      while(1){
+        a=Serial.read();
+        if('0'<=a && a<='9') break;
+      }
       a=a-'0';
       opening();
       delay(100);
@@ -121,5 +130,14 @@ void loop(){
       pop();
       delay(100);
     }
+    if(com=='b'){
+      push();
+      delay(100);
+      opening();
+      delay(100);
+      pop();
+      delay(100);
+    }
   }
 }
+
